@@ -1,0 +1,26 @@
+
+[2022-06-24 01:56:12] Beginning TopHat run (v2.0.13)
+-----------------------------------------------
+[2022-06-24 01:56:12] Checking for Bowtie
+		  Bowtie version:	 2.2.5.0
+[2022-06-24 01:56:12] Checking for Bowtie index files (genome)..
+[2022-06-24 01:56:12] Checking for reference FASTA file
+	Warning: Could not find FASTA file athal/athal.fa
+[2022-06-24 01:56:12] Reconstituting reference FASTA file from Bowtie index
+  Executing: /opt/anaconda3/envs/tophat-env/bin/bowtie2-inspect athal/athal > Tophat/Day8/tmp/athal.fa
+[2022-06-24 01:56:12] Generating SAM header for athal/athal
+[2022-06-24 01:56:12] Preparing reads
+	 left reads: min. length=50, max. length=50, 63573 kept reads (0 discarded)
+[2022-06-24 01:56:14] Mapping left_kept_reads to genome athal with Bowtie2 
+[2022-06-24 01:56:16] Mapping left_kept_reads_seg1 to genome athal with Bowtie2 (1/2)
+[2022-06-24 01:56:17] Mapping left_kept_reads_seg2 to genome athal with Bowtie2 (2/2)
+[2022-06-24 01:56:17] Searching for junctions via segment mapping
+[2022-06-24 01:56:18] Retrieving sequences for splices
+[2022-06-24 01:56:18] Indexing splices
+[2022-06-24 01:56:18] Mapping left_kept_reads_seg1 to genome segment_juncs with Bowtie2 (1/2)
+[2022-06-24 01:56:18] Mapping left_kept_reads_seg2 to genome segment_juncs with Bowtie2 (2/2)
+[2022-06-24 01:56:18] Joining segment hits
+[2022-06-24 01:56:19] Reporting output tracks
+-----------------------------------------------
+[2022-06-24 01:56:22] A summary of the alignment counts can be found in Tophat/Day8/align_summary.txt
+[2022-06-24 01:56:22] Run complete: 00:00:10 elapsed
