@@ -1,0 +1,238 @@
+---
+title: "Module4_test"
+author: "OHfromH2O"
+date: '2022-06-28'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### The yeastRNASeq experiment data package contains FASTQ files from an RNA seq experiment in yeast. When the package is installed, you can access one of the FASTQ files by the path given by commands below:
+```{r echo=T, results='hide', message=FALSE, warning=FALSE}
+library(yeastRNASeq)
+fastqFilePath <- system.file("reads", "wt_1_f.fastq.gz", package = "yeastRNASeq")
+```
+### **Q1. What fraction of reads in this file has an A nucleotide in the 5th base of the read?**
+```{r echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+library(ShortRead)
+library(Biostrings)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# read fastq file and save as DNAStringSet
+reads <- readFastq(fastqFilePath)
+DNAStringSet <- sread(reads)
+
+# create a consensusMatrix to have information about base position
+cM <- consensusMatrix(DNAStringSet, as.prob=TRUE, baseOnly=TRUE)
+cM['A', 5]
+```
+
+
+### **Q2. What is the average numeric quality value of the 5th base of these reads?**
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# convert quality values to numeric matrix, inlcuding 5th bases (5th column)
+quality_conversion <- as(quality(reads), "matrix")[,5]
+
+# calculate average of quality of 5th bases 
+mean(quality_conversion)
+```
+
+
+### The leeBamViews experiment data package contains aligned BAM files from an RNA seq experiment in yeast (the same experiment as in Questions 1 and 2, but that is not pertinent to the question). You can access one of the BAM files by the path given by commands below:
+```{r results='hide', message=FALSE, warning=FALSE}
+library(leeBamViews)
+bamFilePath <- system.file("bam", "isowt5_13e.bam", package="leeBamViews")
+```
+### These reads are short reads (36bp) and have been aligned to the genome using a standard aligner, ie. potential junctions have been ignored (this makes some sense as yeast has very few junctions and the reads are very short). A read duplicated by position is a read where at least one more read shares the same position. We will focus on the interval from 800,000 to 801,000 on yeast chromosome 13.  
+### **Q3. In this interval, how many reads are duplicated by position?**
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(Rsamtools)
+bamFile <- BamFile(bamFilePath)
+seqinfo(bamFile)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# read interval regions from 800,000 to 801,000 on Scchr13
+gr13 <- GRanges(seqnames = "Scchr13", ranges = IRanges(start = c(800000), end = c(801000)))
+params <- ScanBamParam(which = gr13, what = scanBamWhat())
+aln <- scanBam(bamFile, param = params)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# count duplicated reads, by subtracting the ones which appear only one time by position (unique_frequency) from total reads
+total_frequency <- table(aln[[1]]$pos)
+unique_frequency <- table(aln[[1]]$pos) == 1
+sum(total_frequency) - sum(unique_frequency)
+```
+
+
+### The package contains 8 BAM files in total, representing 8 different samples from 4 groups. A full list of file paths can be had as below:
+```{r results='hide', message=FALSE, warning=FALSE}
+bpaths <- list.files(system.file("bam", package="leeBamViews"), pattern = "bam$", full=TRUE)
+```
+### An objective of the original paper was the discovery of novel transcribed regions in yeast. One such region is Scchr13:807762-808068.  
+### **Q4. What is the average number of reads across the 8 samples falling in this interval?**
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# read the novel transcribed regions (from 807,762 to 808,068)
+bamView <- BamViews(bpaths)
+gr_novel <- GRanges(seqnames="Scchr13", ranges=IRanges(start = c(807762), end = c(808068)))
+bamRanges(bamView) <- gr_novel
+aln_novel <- scanBam(bamView)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# get sequence of the alignment for each sample
+alns_seq <- lapply(aln_novel, function(xx) xx[[1]]$seq)
+alns_seq
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# calculate the average number of reads across the 8 samples
+alns_len_sum = 0
+for (i in 1:length(alns)){
+  alns_len_sum = alns_len_sum + length(alns_seq[i][[1]])
+}
+alns_len_sum / length(alns_seq)
+```
+
+
+### In the lecture on the oligo package an ExpressionSet with 18 samples is constructed, representing normalized data from an Affymetrix gene expression microarray. The samples are divided into two groups given by the group variable.  
+### **Q5. What is the average expression across samples in the control group for the “8149273” probeset (this is a character identifier, not a row number)?**
+```{r results='hide', message=FALSE, warning=FALSE}
+# get the gene expression raw data
+library(GEOquery)
+getGEOSuppFiles("GSE38792")
+untar("GSE38792/GSE38792_RAW.tar", exdir = "GSE38792/CEL")
+
+# read data
+library(oligo)
+celfiles <- list.files("GSE38792/CEL", full = TRUE)
+rawData <- read.celfiles(celfiles)
+
+# cleanup the file and parse phenotype data (pData) by the group variable
+filename <- sampleNames(rawData)
+pData(rawData)$filename <- filename
+sampleNames <- sub(".*_", "", filename)
+sampleNames <- sub(".CEL.gz$", "", sampleNames)
+sampleNames(rawData) <- sampleNames
+pData(rawData)$group <- ifelse(grepl("^OSA", sampleNames(rawData)), "OSA", "Control")
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# normalize the data
+normData <- rma(rawData)
+normData
+
+# find "8149273" probeset from group samples
+samples_with_probeset <- match("8149273", rownames(normData))
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# calculate the average expression in control group samples[1:8]
+mean(exprs(normData[samples_with_probeset,])[1:8])
+```
+
+
+### Use the limma package to fit a two group comparison between the control group and the OSA group, and borrow strength across the genes using eBayes(). Include all 18 samples in the model fit.  
+### **Q6. What is the absolute value of the log foldchange (logFC) of the gene with the lowest P.value?**
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(limma)
+
+# use limma to fit between control group and OSA group
+normData$group <- factor(normData$group)
+design <- model.matrix(~normData$group)
+fit <- lmFit(normData, design)
+fit <- eBayes(fit)
+topTable(fit)$logFC
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# calculate absolute value of logFC which has lowest P.value (1st element of logFC)
+abs(topTable(fit)$logFC[1])
+```
+
+
+### **Q7. How many genes are differentially expressed between the two groups at an adj.P.value cutoff of 0.05?**
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+top_table <- topTable(fit)
+top_table
+
+top_table_cutoff <- subset(top_table, adj.P.Val < 0.05)
+top_table_cutoff
+```
+
+
+### An example 450k dataset is contained in the minfiData package. This dataset contains 6 samples; 3 cancer and 3 normals. Cancer has been shown to be globally hypo-methylated (less methylated) compared to normal tissue of the same kind.  
+### Take the RGsetEx dataset in this package and preprocess it with the preprocessFunnorm function. For each sample, compute the average Beta value (percent methylation) across so-called OpenSea loci.  
+### **Q8. What is the mean difference in beta values between the 3 normal samples and the 3 cancer samples, across OpenSea CpGs?**
+```{r echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+library(minfi)
+library(minfiData)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# preprocess the RGsetEx dataset
+rgSet <- preprocessFunnorm(RGsetEx)
+
+# subset OpenSea locus
+rg_openseas <- rgSet[c(getIslandStatus(rgSet) == "OpenSea")]
+
+# get Beta values
+rg_beta <- getBeta(rg_openseas)
+rg_beta
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# calculate mean difference in beta values between normal and cancer group
+apply(rg_beta, 2, mean)
+
+normal <- mean(rg_beta[, c(1,2,5)])
+cancer <- mean(rg_beta[, c(3,4,6)])
+normal - cancer
+```
+
+
+### The Caco2 cell line is a colon cancer cell line profiled by ENCODE. Obtain the narrowPeak DNase hyper sensitive sites computed by the analysis working group (AWG).  
+### **Q9. How many of these DNase hypersensitive sites contain one or more CpGs on the 450k array?**
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(AnnotationHub)
+
+# retrieve Caco2 cell line data from AnnotationHub
+ah <- AnnotationHub()
+ah <- subset(ah, species=="Homo sapiens")
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ah_Caco2 <- query(ah, c("Caco2", "AWG", "narrowpeak"))
+ah_Caco2 <- ah_Caco2[["AH22442"]]
+
+CpG_450K <- granges(rgSet)
+findOverlaps(CpG_450K, ah_Caco2)
+```
+
+
+### The zebrafishRNASeq package contains summarized data from an RNA-seq experiment in zebrafish in the form of a data.frame called zfGenes. The experiment compared 3 control samples to 3 treatment samples. Each row is a transcript; the data.frame contains 92 rows with spikein transcripts; these have a rowname starting with “ERCC”. Exclude these rows from the analysis.  
+### Use DESeq2 to perform a differential expression analysis between control and treatment. Do not discard (filter) genes and use the padj results output as the p-value.
+### **Q10. How many features are differentially expressed between control and treatment (ie. padj<=0.05)?**
+```{r echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+library(DESeq2)
+library(zebrafishRNASeq)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# get the data
+data("zfGenes")
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# for each row, exclude ERCC spikein transcripts
+zf <- zfGenes[grep("^ERCC", rownames(zfGenes), invert = TRUE), ]
+
+# set up input data before running DESeqDataSetFromMatrix
+countData_zf <- as.matrix(zf)
+colData <- DataFrame(sampleID = colnames(zf), group = as.factor(c("ctrl", "ctrl", "ctrl", "trt", "trt", "trt")))
+
+# perform DESeq2
+dds <- DESeqDataSetFromMatrix(countData_zf, colData, design = ~ group)
+dds <- DESeq(dds)
+
+# find differentially expressed features which are significant
+res <- results(dds)
+res <- res[order(res$padj),]
+length(which(res$padj <= 0.05))
+```
+
+
+```{r}
+sessionInfo()
+```

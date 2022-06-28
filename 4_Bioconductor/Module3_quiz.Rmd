@@ -1,0 +1,190 @@
+---
+title: "Module3_quiz"
+author: "OHfromH2O"
+date: '2022-06-27'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### **Q1. What is the mean expression across all features for sample 5 in the ALL dataset (from the ALL package)?**
+```{r echo=TRUE, results='hide', fig.show='hide', message=FALSE, warning=FALSE}
+library(ALL)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+data(ALL)
+mean(exprs(ALL[,5]))
+```
+
+
+### We will use the biomaRt package to annotate an Affymetrix microarray. We want our results in the hg19 build of the human genome and we therefore need to connect to Ensembl 75 which is the latest release on this genome version. How to connect to older versions of Ensembl is described in the biomaRt package vignette; it can be achived with the command mart <- useMart(host=’feb2014.archive.ensembl.org’,biomart="ENSEMBL_MART_ENSEMBL").  
+### **Q2. Using this version of Ensembl, annotate each feature of the ALL dataset with the Ensembl gene id. How many probesets (features) are annotated with more than one Ensembl gene id?**
+```{r echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+library(biomaRt)
+
+#install packages through => BiocManager::install("hgu95av2.db")
+library("hgu95av2.db")
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# connect to older version of Ensemble
+mart <- useMart(host='feb2014.archive.ensembl.org', biomart = "ENSEMBL_MART_ENSEMBL")
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# list marts
+listDatasets(mart)
+ensembl_mart <- useDataset("hsapiens_gene_ensembl", mart)
+
+# list features
+ids <- featureNames(ALL)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# check Attributes and Filters to annotate
+listAttributes(ensembl_mart)
+listFilters(ensembl_mart)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# annotate each feature
+annotation_ALL <- getBM(attributes=c("ensembl_gene_id","affy_hg_u95av2"), filters="affy_hg_u95av2", values=ids, mart=ensembl_mart)
+sum(table(annotation_ALL[,2])>1)
+```
+
+
+### **Q3. Question: How many probesets (Affymetrix IDs) are annotated with one or more genes on the autosomes (chromosomes 1 to 22).**
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# annotate autosomes
+chrom_values <- c(1:22)
+annotation_ALL_chr <- getBM(attributes=c("ensembl_gene_id", "affy_hg_u95av2", "chromosome_name"), filters=c("affy_hg_u95av2","chromosome_name"), values=list(ids, chrom_values), mart=ensembl_mart)
+frequency <- table(annotation_ALL_chr[,2])
+sum(table(frequency))
+```
+
+
+### Use the MsetEx dataset from the minfiData package. Part of this question is to use the help system to figure out how to address the question.  
+### **Q4. What is the mean value of the Methylation channel across the features for sample “5723646052_R04C01”?**
+```{r echo=TRUE, results='hide', fig.show='hide', message=FALSE, warning=FALSE}
+library(minfiData)
+library(minfi)
+```
+```{r}
+# get metyhlation data from MsetEx dataset => 5723646052_R04C01 at column2
+getMeth(MsetEx)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# index 2nd column and calculate mean
+mean(getMeth(MsetEx)[,2])
+```
+
+
+### **Q5. Access the processed data from NCBI GEO Accession number GSE788. What is the mean expression level of sample GSM9024?**
+```{r echo=TRUE, results='hide', fig.show='hide', message=FALSE, warning=FALSE}
+library(GEOquery)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+eList <- getGEO("GSE788")
+eData <- eList[[1]]
+```
+```{r}
+# find position of expression level on sample GSM9024 => column 2
+exprs(eData)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+mean(exprs(eData)[,2])
+```
+
+
+### We are using the airway dataset from the airway package. 
+### **Q6. What is the average of the average length across the samples in the expriment?**
+```{r echo=TRUE, results='hide', fig.show='hide', message=FALSE, warning=FALSE}
+library(airway)
+library(GenomicRanges)
+```
+```{r}
+data(airway)
+mean(airway$avgLength)
+```
+
+
+### We are using the airway dataset from the airway package. The features in this dataset are Ensembl genes. 
+### **Q7. What is the number of Ensembl genes which have a count of 1 read or more in sample SRR1039512?**
+```{r}
+# count the number of Ensembl genes in sample SRR1039512 (3rd column)
+sum(assay(airway)[,3]>=1)
+```
+
+
+### **Q8. The airway dataset contains more than 64k features. How many of these features overlaps with transcripts on the autosomes (chromosomes 1-22) as represented by the TxDb.Hsapiens.UCSC.hg19.knownGene package?**  
+### Clarification: A feature has to overlap the actual transcript, not the intron of a transcript. So you will need to make sure that the transcript representation does not contain introns.
+```{r echo=TRUE, results='hide', fig.show='hide', message=FALSE, warning=FALSE}
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# retrieve exon data from txdb
+# installed packages through => BiocManager::install("TxDb.Hsapiens.UCSC.hg19.knownGene")
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+txdb_exons <- exons(TxDb.Hsapiens.UCSC.hg19.knownGene)
+
+# keep only autosomal transcripts
+txdb_exons_autosome <- keepSeqlevels(txdb_exons, paste0("chr",1:22), pruning.mode = "coarse")
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# rename as NCBI format
+txdb_ncbi <- mapSeqlevels(seqlevels(txdb_exons), "NCBI")
+txdb_exons_ncbi <- renameSeqlevels(txdb_exons_autosome, txdb_ncbi)
+subsetByOverlaps(airway, txdb_exons_ncbi)
+```
+##### referring to https://www.rdocumentation.org/packages/GenomeInfoDb/versions/1.8.3/topics/seqlevelsStyle
+
+
+### The expression measures of the airway dataset are the number of reads mapping to each feature. In the previous question we have established that many of these features do not overlap autosomal transcripts from the TxDb.Hsapiens.UCSC.hg19.knownGene. But how many reads map to features which overlaps these transcripts?  
+### **Q9. For sample SRR1039508, how big a percentage (expressed as a number between 0 and 1) of the total reads in the airway dataset for that sample, are part of a feature which overlaps an autosomal TxDb.Hsapiens.UCSC.hg19.knownGene transcript?**
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+sample_SRR1039508 <- airway[, 1]
+sample_SRR1039508_autosomes_olap <- subsetByOverlaps(sample_SRR1039508, txdb_exons_ncbi)
+
+# percentage of the total reads in airway dataset for SRR1039508 which overlaps autosome of txdb
+autosome_reads <- sum(assay(sample_SRR1039508_autosomes_olap, "counts"))
+total_reads <- sum(assay(sample_SRR1039508, "counts"))
+autosome_reads/total_reads
+```
+
+
+### Consider sample SRR1039508 and only consider features which overlap autosomal transcripts from TxDb.Hsapiens.UCSC.hg19.knownGene. We should be able to very roughly divide these transcripts into expressed and non expressed transcript. Expressed transcripts should be marked by H3K4me3 at their promoter. The airway dataset have assayed “airway smooth muscle cells”. In the Roadmap Epigenomics data set, the E096 is supposed to be “lung”. Obtain the H3K4me3 narrowPeaks from the E096 sample using the AnnotationHub package.  
+### **Q10. What is the median number of counts per feature (for sample SRR1039508) containing a H3K4me narrowPeak in their promoter (only features which overlap autosomal transcripts from TxDb.Hsapiens.UCSC.hg19.knownGene are considered)?**
+### Clarification: We are using the standard 2.2kb default Bioconductor promotor setting.  
+### Conclusion: Compare this to the median number of counts for features without a H3K4me3 peak. Note that this short analysis has not taken transcript lengths into account and it compares different genomic regions to each other; this is highly suscepticle to bias such as sequence bias.
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(AnnotationHub)
+ah <- AnnotationHub()
+ah_E096 <- query(ah, c("E096", "H3K4me3", "narrowPeak"))
+ah_record <- ah_E096[["AH30596"]]
+ah_record_autosome <- keepSeqlevels(ah_record, paste0("chr",1:22), pruning.mode = "coarse")
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# rename as NCBI format
+txdb_ncbi <- mapSeqlevels(seqlevels(txdb_exons), "NCBI")
+ah_record_ncbi <- renameSeqlevels(ah_record_autosome, txdb_ncbi)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# extract autosomal group in NCBI format
+ncbi_group <- extractSeqlevelsByGroup(species = "Homo sapiens", style = "NCBI", group = "auto")
+
+# keep only these seqlevels from sample features
+sample_ncbi <- keepSeqlevels(range(rowRanges(sample_SRR1039508_autosomes_olap)), ncbi_group)
+
+# subset features containing a H3K4me narrowPeak in their promoters from autosomal transcripts
+ov <- subsetByOverlaps(promoters(sample_ncbi), ah_record_ncbi)
+
+# subset these features from sample SRR1039508
+ov <- subsetByOverlaps(sample_SRR1039508, ov)
+
+# count features and calculate median number
+median(assay(ov, "counts"))
+```
+ 
+
+```{r}
+sessionInfo()
+```

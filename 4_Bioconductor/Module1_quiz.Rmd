@@ -1,7 +1,7 @@
 ---
 title: "Module1_quiz"
 author: "OHfromH2O"
-date: '2022-06-24'
+date: "2022-06-24"
 output: html_document
 ---
 
@@ -9,19 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
----
-title: "Module1"
-author: "OHfromH2O"
-date: '2022-06-24'
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-### 1. Use the AnnotationHub package to obtain data on "CpG Islands" in the human genome. **How many islands exists on the autosomes?**
-
+### Use the AnnotationHub package to obtain data on CpG Islands in the human genome. 
+### **Q1. How many islands exists on the autosomes?**
 ```{r echo=T, message=FALSE, warning=FALSE}
 library(IRanges)
 library(GenomicRanges)
@@ -30,7 +19,6 @@ library(rtracklayer)
 library(dbplyr)
 library(AnnotationHub)
 ```
-
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # retrieve CpG dataset from AnnotationHub
 ah <- AnnotationHub()
@@ -40,7 +28,6 @@ ah_hg_CpG
 ah_hg_CpG_record <- ah_hg_CpG[["AH5086"]]
 ah_hg_CpG_record
 ```
-
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # extract autosomes
 autosomes_filter <- c(paste("chr", 1:22, sep = ""))
@@ -51,14 +38,16 @@ CpG_autosomes <- split_ah_hg_CpG[autosomes_filter]
 unlist(CpG_autosomes)
 ```
 
-### 2. **How many CpG Islands exists on chromosome 4?**
+
+### Q2. **How many CpG Islands exists on chromosome 4?**
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-autosomes[4]
+CpG_autosomes[4]
 ```
 
-### 3. Obtain the data for the H3K4me3 histone modification for the H1 cell line from Epigenomics Roadmap, using AnnotationHub. Subset these regions to only keep regions mapped to the autosomes (chromosomes 1 to 22). **How many bases does these regions cover?**
 
-# obtained the cell line information(E003) from: https://www.ncbi.nlm.nih.gov/research/snpdelscore/tissues/
+### Obtain the data for the H3K4me3 histone modification for the H1 cell line from Epigenomics Roadmap, using AnnotationHub. Subset these regions to only keep regions mapped to the autosomes (chromosomes 1 to 22). 
+### **Q3. How many bases does these regions cover?**
+##### I obtained the cell line information(E003) from: https://www.ncbi.nlm.nih.gov/research/snpdelscore/tissues/
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # querying H3K4me3 H1 cell line
 ah_H3K4me3 <- query(ah, c("H3K4me3", "narrowpeak", "E003"))
@@ -75,7 +64,9 @@ H3K4me3_autosomes <- split_H3K4me3[autosomes_filter]
 sum(width(unlist(H3K4me3_autosomes)))
 ```
 
-### 4. Obtain the data for the H3K27me3 histone modification for the H1 cell line from Epigenomics Roadmap, using the AnnotationHub package. Subset these regions to only keep regions mapped to the autosomes. In the return data, each region has an associated "signalValue". **What is the mean signalValue across all regions on the standard chromosomes?**
+
+### Obtain the data for the H3K27me3 histone modification for the H1 cell line from Epigenomics Roadmap, using the AnnotationHub package. Subset these regions to only keep regions mapped to the autosomes. In the return data, each region has an associated "signalValue".
+### **Q4. What is the mean signalValue across all regions on the standard chromosomes?**
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # querying H3K4me3 H1 cell line
 ah_H3K27me3 <- query(ah, c("H3K27me3", "narrowpeak", "E003"))
@@ -95,14 +86,18 @@ strd_H3K27me3_autosomes <- unlist(H3K27me3_autosomes)
 mean(strd_H3K27me3_autosomes$signalValue)
 ```
 
-### 5. Bivalent regions are bound by both H3K4me3 and H3K27me3. Using the regions we have obtained above, **how many bases on the standard chromosomes are bivalently marked?**
+
+### Bivalent regions are bound by both H3K4me3 and H3K27me3. 
+### **Q5. Using the regions we have obtained above, how many bases on the standard chromosomes are bivalently marked?**
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 ## intersect between two records (H3K4me3 vs H3K27me3)
 bivalent_regions <- intersect(unlist(H3K4me3_autosomes), unlist(H3K27me3_autosomes))
 sum(width(bivalent_regions))
 ```
 
-### 6. We will examine the extent to which bivalent regions overlap CpG Islands. **How big a fraction (expressed as a number between 0 and 1) of the bivalent regions, overlap one or more CpG Islands?**
+
+### We will examine the extent to which bivalent regions overlap CpG Islands. 
+### **Q6. How big a fraction (expressed as a number between 0 and 1) of the bivalent regions, overlap one or more CpG Islands?**
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # find overlaps between bivalent regions and CpG Islands
 bivalent_CpG <- findOverlaps(bivalent_regions, unlist(CpG_autosomes))
@@ -112,7 +107,8 @@ bivalent_CpG_percent <- length(subsetByOverlaps(bivalent_regions, unlist(CpG_aut
 bivalent_CpG_percent
 ```
 
-### 7. **How big a fraction (expressed as a number between 0 and 1) of the bases which are part of CpG Islands, are also bivalent marked?**
+
+### **Q7. How big a fraction (expressed as a number between 0 and 1) of the bases which are part of CpG Islands, are also bivalent marked?**
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 CpG_bivalent_intersect <- intersect(bivalent_regions, unlist(CpG_autosomes))
 
@@ -121,19 +117,21 @@ CpG_bivalent_base_percent <- sum(width(reduce(CpG_bivalent_intersect)))/sum(widt
 CpG_bivalent_base_percent
 ```
 
-### 8. **How many bases are bivalently marked within 10kb of CpG Islands?** 
--Tip: consider using the "resize()"" function.
+
+### **Q8. How many bases are bivalently marked within 10kb of CpG Islands?** 
+### Tip: consider using the "resize()"" function.
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # expand CpG Islands to 10kb
 CpG_10kb <- resize(unlist(CpG_autosomes), width = 20000 + width(unlist(CpG_autosomes)), fix = "center")
 
-CpG_10kb_bivalent <- intersect(CpG_10kb, bivalent)
+CpG_10kb_bivalent <- intersect(CpG_10kb, bivalent_regions)
 sum(width(CpG_10kb_bivalent))
 ```
 
-### 9. **How big a fraction (expressed as a number between 0 and 1) of the human genome is contained in a CpG Island?**
--Tip 1: the object returned by AnnotationHub contains "seqlengths".  
--Tip 2: you may encounter an integer overflow. As described in the session on R Basic Types, you can address this by converting integers to numeric before summing them, "as.numeric()".
+
+### **Q9. How big a fraction (expressed as a number between 0 and 1) of the human genome is contained in a CpG Island?**
+### Tip 1: the object returned by AnnotationHub contains "seqlengths".  
+### Tip 2: you may encounter an integer overflow. As described in the session on R Basic Types, you can address this by converting integers to numeric before summing them, "as.numeric()".
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # calculate human genome size
 chr_list <- c(paste("chr", 1:22, sep=""))
@@ -147,7 +145,8 @@ CpG_autosomes_size <- sum(as.numeric(width(unlist(CpG_autosomes))))
 CpG_autosomes_size / genome_size
 ```
 
-### 10. Compute an odds-ratio for the overlap of bivalent marks with CpG islands.
+
+### **Q10. Compute an odds-ratio for the overlap of bivalent marks with CpG islands.**
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # create InOut matrix
 InOut <- matrix(0, ncol = 2, nrow = 2)
@@ -161,4 +160,9 @@ InOut[2,2] <- genome_size - sum(InOut)
 ## calculate odds-ratio
 oddsRatio <- InOut[1,1] * InOut[2,2] / (InOut[2,1] * InOut[1,2])
 oddsRatio
+```
+
+
+```{r}
+sessionInfo()
 ```
