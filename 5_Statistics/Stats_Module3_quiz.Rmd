@@ -1,0 +1,270 @@
+---
+title: "Stats_Module3_quiz"
+author: "OHfromH2O"
+date: '2022-07-01'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 1. Load the example SNP data with the following code:
+```{r}
+library(snpStats)
+library(broom)
+data(for.exercise)
+use <- seq(1, ncol(snps.10), 10)
+sub.10 <- snps.10[,use]
+snpdata = sub.10@.Data
+status = subject.support$cc
+```
+### Fit a linear model and a logistic regression model to the data for the 3rd SNP. 
+### **Q1. What are the coefficients for the SNP variable? How are they interpreted? (Hint: Don't forget to recode the 0 values to NA for the SNP data)**
+```{r}
+# recode 0 values as missing values for 3th SNP data
+snp3 = as.numeric(snpdata[,3])
+snp3[snp3==0] = NA
+
+# fit a linear model
+lm3 = lm(status ~ snp3)
+tidy(lm3)
+```
+```{r}
+# fit a logistic regression model
+glm3 = glm(status ~ snp3,family="binomial")
+tidy(glm3)
+```
+
+### Answer for Q1:
+Linear Model == -0.04  
+Logistic Model == -0.16  
+Both models are fit on the additive scale. So in the linear model case, the coefficient is the decrease in probability associated with each additional copy of the minor allele. In the logistic regression case, it is the decrease in the log odds ratio associated with each additional copy of the minor allele.
+
+
+
+### **Q2. In the previous question why might the choice of logistic regression be better than the choice of linear regression?**
+```{r}
+par(mfrow=c(1,2))
+plot(status ~ snp3,pch=19)
+abline(lm3,col=2,lwd=3)
+plot(glm3$residuals)
+```
+### Answer for Q2:
+If you included more variables it would be possible to get negative estimates for the probability of being a case from the linear model, but this would be prevented with the logistic regression model
+
+
+### 3. Load the example SNP data with the following code:
+```{r message=FALSE, warning=FALSE}
+library(snpStats)
+library(broom)
+data(for.exercise)
+use <- seq(1, ncol(snps.10), 10)
+sub.10 <- snps.10[,use]
+snpdata = sub.10@.Data
+status = subject.support$cc
+```
+### Fit a logistic regression model on a recessive (need 2 copies of minor allele to confer risk) and additive scale for the 10th SNP. Make a table of the fitted values versus the case/control status. 
+### **Q3. Does one model fit better than the other?**
+```{r}
+# fit a logistic regression model on a recessive and additive scale
+snp10 = as.numeric(snpdata[,10])
+snp10_recessive = (snp10 == 3)
+glm10_recessive = glm(status ~ snp10_recessive, family="binomial")
+tidy(glm10_recessive)
+```
+```{r}
+the_fitted_values <- fitted(glm10_recessive)
+table(the_fitted_values, status)
+```
+### Answer for Q3:
+No, in all cases, the fitted values are near 0.5 and there are about an equal number of cases and controls in each group. This is true regardless of wether you fit a recessive or additive model.
+
+##### [standard convention for additive model: 0 = missing, 1 = "A/A", 2 = "A/B" or "B/A" and 3 = "B/B", where "A" is the reference allele and "B" is the risk allele] (https://www.rdocumentation.org/packages/VariantAnnotation/versions/1.12.9/topics/genotypeToSnpMatrix?)
+
+
+
+### 4. Load the example SNP data with the following code:
+```{r message=FALSE, warning=FALSE}
+library(snpStats)
+library(broom)
+data(for.exercise)
+use <- seq(1, ncol(snps.10), 10)
+sub.10 <- snps.10[,use]
+snpdata = sub.10@.Data
+status = subject.support$cc
+```
+### Fit an additive logistic regression model to each SNP. 
+### **Q4. What is the average effect size? What is the max? What is the minimum?**
+```{r}
+# fit an additive logistic regression model to each SNP
+results = rep(NA, dim(snpdata)[2])
+for (i in 1:ncol(snpdata)){
+  snpdata_i = as.numeric(snpdata[,i])
+  snpdata_i[snpdata_i == 0] = NA
+  glm_i = glm(status ~ snpdata_i, family = "binomial")
+  results[i] = tidy(glm_i)$statistic[2]
+}
+```
+```{r}
+# average of effect size
+mean(results)
+
+# minimum of effect size
+min(results)
+
+# maximum of effect size
+max(results)
+```
+### Answer for Q4:
+Average effect size = 0.007, minimum = -4.25, maximum = 3.90
+
+
+### 5. Load the example SNP data with the following code:
+```{r message=FALSE, warning=FALSE}
+library(snpStats)
+library(broom)
+data(for.exercise)
+use <- seq(1, ncol(snps.10), 10)
+sub.10 <- snps.10[,use]
+snpdata = sub.10@.Data
+status = subject.support$cc
+```
+### Fit an additive logistic regression model to each SNP and square the coefficients. 
+### **Q5. What is the correlation with the results from using snp.rhs.tests and chi.squared? Why does this make sense?**
+```{r}
+# square the coefficients
+results_coeff_squred =  results^2
+
+# fit many glms at once by using snp.rhs.tests
+# for unadjusted model, regress with 1
+glm_all = snp.rhs.tests(status ~ 1, snp.data = sub.10)
+
+# correlation with the results from using snp.rhs.tests and chi.squared
+cor(results_coeff_squred, chi.squared(glm_all))
+```
+### Answer for Q5:
+They are both testing for the same association using the same additive regression model on the logistic scale but using slightly different tests.
+
+
+
+### 6. Load the Montgomery and Pickrell eSet:
+```{r message=FALSE, warning=FALSE}
+library(ballgown)
+library(Biobase)
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
+load(file=con)
+close(con)
+mp = montpick.eset
+pdata=pData(mp)
+edata=as.data.frame(exprs(mp))
+fdata = fData(mp)
+```
+### Do the log2(data + 1) transform and fit calculate F-statistics for the difference between studies/populations using genefilter:rowFtests and using genefilter:rowttests. 
+### **Q6. Do you get the same statistic? Do you get the same p-value?**
+```{r results='hide', message=FALSE, warning=FALSE}
+  library(devtools)
+  library(Biobase)
+  library(limma)
+  library(genefilter)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE, tidy=TRUE}
+edata = log2(as.matrix(edata) + 1)
+# perform rowttests
+tstats_obj = rowttests(edata, as.factor(pdata$population))
+tidy(tstats_obj)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE, tidy=TRUE}
+# perform rowFtests
+fstats_obj = rowFtests(edata, as.factor(pdata$population))
+tidy(fstats_obj)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+par(mfrow=c(1,2))
+hist(tstats_obj$statistic, col=2)
+hist(fstats_obj$statistic, col=2)
+```
+### Answer for Q6:
+I got the same p-value but different statistics. This is because the F-statistic(esp. regular F-test) and t-statistic test the same thing when doing a two group test and one is a transform of the other.
+
+
+
+### 7. Load the Montgomery and Pickrell eSet:
+```{r}
+con =url("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/montpick_eset.RData")
+load(file=con)
+close(con)
+mp = montpick.eset
+pdata=pData(mp)
+edata=as.data.frame(exprs(mp))
+edata = edata[rowMeans(edata) > 100,]
+fdata = fData(mp)
+```
+### First test for differences between the studies using the DESeq2 package using the DESeq function. Then do the log2(data + 1) transform and do the test for differences between studies using the limma package and the lmFit, ebayes and topTable functions. 
+### **Q7. What is the correlation in the statistics between the two analyses? Are there more differences for the large statistics or the small statistics (hint: Make an MA-plot).**
+```{r message=FALSE, warning=FALSE}
+library(DESeq2)
+library(limma)
+library(genefilter)
+```
+```{r message=FALSE, warning=FALSE}
+# use DESeq2 to test the differences between the studies
+de = DESeqDataSetFromMatrix(edata, pdata, ~study)
+glm_de = DESeq(de)
+result_de = results(glm_de)
+
+# use limma to test the differences between the studies
+edata = log2(as.matrix(edata) + 1)
+mod = model.matrix(~ as.factor(pdata$study))
+fit_limma = lmFit(edata, mod)
+ebayes_limma = eBayes(fit_limma) 
+top = topTable(ebayes_limma,number=dim(edata)[1], sort.by="none")
+
+# correlation in the statistics between two analyses
+cor(result_de$stat, top$t)
+```
+```{r}
+# combine a set of MAList
+y = cbind(result_de$stat, top$t)
+
+# make a MA-plot
+limma::plotMA(y)
+```
+### Answer for Q7:
+The correlation in the statistics between the two analyses is 0.93. Also there are more differences for the small statistics based on MA-plot.
+
+
+### 8. Apply the Benjamni-Hochberg correction to the P-values from the two previous analyses. 
+### **Q8. How many results are statistically significant at an FDR of 0.05 in each analysis?**
+```{r}
+# DESeq analysis
+fp_bh = p.adjust(result_de$pvalue, method="BH")
+sum(fp_bh < 0.05)
+```
+```{r}
+# limma analysis
+fp_bh = p.adjust(top$P.Value, method="BH")
+sum(fp_bh < 0.05)
+```
+### Answer for Q8:
+DESeq = 1995 significant; limma = 2807 significant.
+
+
+
+### **Q9. Is the number of significant differences surprising for the analysis comparing studies from Question 8? Why or why not?**
+### Answer for Q9:
+Yes and no. It is surprising because there is a large fraction of the genes that are significantly different, but it isn't that surprising because we would expect that when comparing measurements from very different batches.
+
+
+
+### 10. Suppose you observed the following P-values from the comparison of differences between studies. 
+### **Q10. Why might you be suspicious of the analysis?**
+![Module3_Q10_figure](/Users/mac/Documents/Git/5_Statistics/)
+### Answer for Q10:
+The p-values should have a spike near zero (the significant results) and be flat to the right hand side (the null results) so the distribution pushed toward one suggests conservative p-value calculation.
+
+
+
+```{r}
+sessionInfo()
+```
