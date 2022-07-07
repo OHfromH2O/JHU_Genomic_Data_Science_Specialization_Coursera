@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### The yeastRNASeq experiment data package contains FASTQ files from an RNA seq experiment in yeast. When the package is installed, you can access one of the FASTQ files by the path given by commands below:
+### 1. The yeastRNASeq experiment data package contains FASTQ files from an RNA seq experiment in yeast. When the package is installed, you can access one of the FASTQ files by the path given by commands below:
 ```{r echo=T, results='hide', message=FALSE, warning=FALSE}
 library(yeastRNASeq)
 fastqFilePath <- system.file("reads", "wt_1_f.fastq.gz", package = "yeastRNASeq")
@@ -40,7 +40,7 @@ mean(quality_conversion)
 ```
 
 
-### The leeBamViews experiment data package contains aligned BAM files from an RNA seq experiment in yeast (the same experiment as in Questions 1 and 2, but that is not pertinent to the question). You can access one of the BAM files by the path given by commands below:
+### 3. The leeBamViews experiment data package contains aligned BAM files from an RNA seq experiment in yeast (the same experiment as in Questions 1 and 2, but that is not pertinent to the question). You can access one of the BAM files by the path given by commands below:
 ```{r results='hide', message=FALSE, warning=FALSE}
 library(leeBamViews)
 bamFilePath <- system.file("bam", "isowt5_13e.bam", package="leeBamViews")
@@ -66,7 +66,7 @@ sum(total_frequency) - sum(unique_frequency)
 ```
 
 
-### The package contains 8 BAM files in total, representing 8 different samples from 4 groups. A full list of file paths can be had as below:
+### 4. The package contains 8 BAM files in total, representing 8 different samples from 4 groups. A full list of file paths can be had as below:
 ```{r results='hide', message=FALSE, warning=FALSE}
 bpaths <- list.files(system.file("bam", package="leeBamViews"), pattern = "bam$", full=TRUE)
 ```
@@ -94,7 +94,7 @@ alns_len_sum / length(alns_seq)
 ```
 
 
-### In the lecture on the oligo package an ExpressionSet with 18 samples is constructed, representing normalized data from an Affymetrix gene expression microarray. The samples are divided into two groups given by the group variable.  
+### 5. In the lecture on the oligo package an ExpressionSet with 18 samples is constructed, representing normalized data from an Affymetrix gene expression microarray. The samples are divided into two groups given by the group variable.  
 ### **Q5. What is the average expression across samples in the control group for the “8149273” probeset (this is a character identifier, not a row number)?**
 ```{r results='hide', message=FALSE, warning=FALSE}
 # get the gene expression raw data
@@ -129,7 +129,7 @@ mean(exprs(normData[samples_with_probeset,])[1:8])
 ```
 
 
-### Use the limma package to fit a two group comparison between the control group and the OSA group, and borrow strength across the genes using eBayes(). Include all 18 samples in the model fit.  
+### 6. Use the limma package to fit a two group comparison between the control group and the OSA group, and borrow strength across the genes using eBayes(). Include all 18 samples in the model fit.  
 ### **Q6. What is the absolute value of the log foldchange (logFC) of the gene with the lowest P.value?**
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 library(limma)
@@ -157,7 +157,7 @@ top_table_cutoff
 ```
 
 
-### An example 450k dataset is contained in the minfiData package. This dataset contains 6 samples; 3 cancer and 3 normals. Cancer has been shown to be globally hypo-methylated (less methylated) compared to normal tissue of the same kind.  
+### 8. An example 450k dataset is contained in the minfiData package. This dataset contains 6 samples; 3 cancer and 3 normals. Cancer has been shown to be globally hypo-methylated (less methylated) compared to normal tissue of the same kind.  
 ### Take the RGsetEx dataset in this package and preprocess it with the preprocessFunnorm function. For each sample, compute the average Beta value (percent methylation) across so-called OpenSea loci.  
 ### **Q8. What is the mean difference in beta values between the 3 normal samples and the 3 cancer samples, across OpenSea CpGs?**
 ```{r echo=TRUE, results='hide', message=FALSE, warning=FALSE}
@@ -185,7 +185,7 @@ normal - cancer
 ```
 
 
-### The Caco2 cell line is a colon cancer cell line profiled by ENCODE. Obtain the narrowPeak DNase hyper sensitive sites computed by the analysis working group (AWG).  
+### 9. The Caco2 cell line is a colon cancer cell line profiled by ENCODE. Obtain the narrowPeak DNase hyper sensitive sites computed by the analysis working group (AWG).  
 ### **Q9. How many of these DNase hypersensitive sites contain one or more CpGs on the 450k array?**
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 library(AnnotationHub)
@@ -203,7 +203,7 @@ findOverlaps(CpG_450K, ah_Caco2)
 ```
 
 
-### The zebrafishRNASeq package contains summarized data from an RNA-seq experiment in zebrafish in the form of a data.frame called zfGenes. The experiment compared 3 control samples to 3 treatment samples. Each row is a transcript; the data.frame contains 92 rows with spikein transcripts; these have a rowname starting with “ERCC”. Exclude these rows from the analysis.  
+### 10. The zebrafishRNASeq package contains summarized data from an RNA-seq experiment in zebrafish in the form of a data.frame called zfGenes. The experiment compared 3 control samples to 3 treatment samples. Each row is a transcript; the data.frame contains 92 rows with spikein transcripts; these have a rowname starting with “ERCC”. Exclude these rows from the analysis.  
 ### Use DESeq2 to perform a differential expression analysis between control and treatment. Do not discard (filter) genes and use the padj results output as the p-value.
 ### **Q10. How many features are differentially expressed between control and treatment (ie. padj<=0.05)?**
 ```{r echo=TRUE, results='hide', message=FALSE, warning=FALSE}
