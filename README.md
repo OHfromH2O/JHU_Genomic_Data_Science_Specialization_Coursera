@@ -1,9 +1,10 @@
 # Genomic Data Science Specialization — Johns Hopkins University
 
-![Institution](https://img.shields.io/badge/Institution-Johns%20Hopkins%20University-blue)
+![Institution](https://img.shields.io/badge/Institution-Johns_Hopkins_University-blue)
 ![Platform](https://img.shields.io/badge/Platform-Coursera-0056D2)
-![Language](https://img.shields.io/badge/Language-Python%20%7C%20R%20%7C%20Bash-green)
-![Tools](https://img.shields.io/badge/Tools-samtools%20%7C%20bowtie2%20%7C%20cufflinks%20%7C%20Bioconductor-orange)
+![Python](https://img.shields.io/badge/Python-Jupyter-3776AB)
+![R](https://img.shields.io/badge/R-Bioconductor-276DC3)
+![CLI](https://img.shields.io/badge/CLI-samtools_bowtie2_cufflinks-orange)
 
 Coursework from the Johns Hopkins Genomic Data Science Specialization (Coursera),
 kept as code. Five courses, one folder each, with the data files the exercises were
@@ -14,7 +15,7 @@ repository shows is sequence-side data handling end to end — FASTA and FASTQ
 parsing, read alignment, variant calling, transcript assembly and differential
 expression — run on real files rather than described.
 
-Work in this repository was done in June–July 2022.
+The courses were taken in 2021; this code was committed in June-July 2022.
 
 ---
 
