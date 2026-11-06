@@ -1,10 +1,10 @@
 # Genomic Data Science Specialization — Johns Hopkins University
 
-![Institution](https://img.shields.io/badge/Institution-Johns_Hopkins_University-blue)
-![Platform](https://img.shields.io/badge/Platform-Coursera-0056D2)
-![Python](https://img.shields.io/badge/Python-Jupyter-3776AB)
-![R](https://img.shields.io/badge/R-Bioconductor-276DC3)
-![CLI](https://img.shields.io/badge/CLI-samtools_bowtie2_cufflinks-orange)
+![Institution: Johns Hopkins University](assets/badges/institution.svg)
+![Platform: Coursera](assets/badges/platform.svg)
+![Python: Jupyter](assets/badges/python.svg)
+![R: Bioconductor](assets/badges/r.svg)
+![CLI: samtools, bowtie2, cufflinks](assets/badges/cli.svg)
 
 Coursework from the Johns Hopkins Genomic Data Science Specialization (Coursera),
 kept as code. Five courses, one folder each, with the data files the exercises were
